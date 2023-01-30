@@ -1,1 +1,2 @@
-web gunicorn engingo.wsgi:application --log-file -
+web: gunicorn core.wsgi
+
