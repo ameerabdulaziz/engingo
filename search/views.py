@@ -1,28 +1,33 @@
-import requests
-from bs4 import BeautifulSoup as bs
+import random
+
 from django.shortcuts import render, redirect
-from django.views.generic import TemplateView, View
+from django.views.generic import TemplateView
+
+from search.scrappers import Scrapper
+from search.sites import sites
 
 
 class HomeView(TemplateView):
     template_name = 'index.html'
 
 
-class SearchView(View):
-    http_method_names = ['post']
-    def dispatch(self, request, *args, **kwargs):
-        if request.method.lower() in self.http_method_names:
-            search = self.request.POST.get('search')
-            url = f'https://www.ask.com/web?q={search}'
-            req = requests.get(url)
-            soup = bs(req.text, 'lxml')
-            result_listings = soup.find_all('div', {'class': 'PartialSearchResults-item-wrapper'})
+class SearchView(TemplateView):
+    def get(self, request, *args, **kwargs):
+        q = request.GET.get('q', None)
+        if q:
             final_result = []
-            for result in result_listings:
-                title = result.find(class_='PartialSearchResults-item-title').text
-                url = result.find('a').get('href')
-                description = result.find(class_='PartialSearchResults-item-abstract').text
-                final_result.append((title, url, description))
+            for site in sites:
+                site_url = f"{site['site_url']}{q}"
+                topic = site['topic']
+                title = site['title']
+                url = site['url']
+                description = site['description']
+                ask_scrapper = Scrapper(site_url, topic, url, title, description)
+                content = ask_scrapper.get_content()
+                print(f'Content --> {content}')
+                final_result += content
+            print(f'final_result --> {final_result}')
+            random.shuffle(final_result)
             context = {
                 'final_result': final_result
             }
