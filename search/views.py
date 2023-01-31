@@ -3,8 +3,8 @@ import random
 from django.shortcuts import render, redirect
 from django.views.generic import TemplateView
 
+from search.models import Site
 from search.scrappers import Scrapper
-from search.sites import sites
 
 
 class HomeView(TemplateView):
@@ -16,17 +16,11 @@ class SearchView(TemplateView):
         q = request.GET.get('q', None)
         if q:
             final_result = []
+            sites = Site.objects.all()
             for site in sites:
-                site_url = f"{site['site_url']}{q}"
-                topic = site['topic']
-                title = site['title']
-                url = site['url']
-                description = site['description']
-                ask_scrapper = Scrapper(site_url, topic, url, title, description)
+                ask_scrapper = Scrapper(site, q)
                 content = ask_scrapper.get_content()
-                print(f'Content --> {content}')
                 final_result += content
-            print(f'final_result --> {final_result}')
             random.shuffle(final_result)
             context = {
                 'final_result': final_result

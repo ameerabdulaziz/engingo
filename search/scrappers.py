@@ -1,36 +1,40 @@
 import requests
 from bs4 import BeautifulSoup as bs
 
+from search.models import RequestSiteLog
+
 
 class Scrapper:
-    def __init__(self, site, topic, url, title, description):
+    def __init__(self, site, q):
         self.site = site
-        self.topic = topic
-        self.url = url
-        self.title = title
-        self.description = description
+        self.q = q
 
     def get_text_from_request_url(self):
+        req = ''
         try:
-            req = requests.get(self.site)
+            site_url = f'{self.site.url}/{self.site.page_search_name}?{self.site.param_search_name}={self.q}'
+            req = requests.get(site_url)
             return req.text
         except:
-            return ''
+            RequestSiteLog.objects.create(site=self.site.name, response=req)
+            return None
 
     def scrape_text(self):
         text = self.get_text_from_request_url()
-        soup = bs(text, 'lxml')
-        print(soup)
-        return soup
+        if text:
+            soup = bs(text, 'lxml')
+            return soup
 
     def get_content(self):
         soup = self.scrape_text()
-        results = soup.find_all('div', {'class': self.topic})
-        content = []
-        print(self.site, self.topic, self.title, self.url, self.description)
-        for result in results:
-            title = result.find(class_=self.title).text
-            url = result.find(class_=self.url).get('href')
-            description = result.find(class_=self.description).text
-            content.append((title, url, description))
-        return content
+        if soup:
+            results = soup.find_all(class_=self.site.card_class)
+            content = []
+            for result in results:
+                title = result.find(class_=self.site.title_class).text
+                url = result.find('a').get('href')
+                description = result.find(class_=self.site.description_class).text
+                if not url.startswith('http'):
+                    url = self.site.url + url[1:]
+                content.append((title, url, description))
+            return content

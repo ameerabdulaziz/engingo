@@ -10,6 +10,8 @@ bs4 = "*"
 lxml = "*"
 gunicorn = "*"
 django-on-heroku = "*"
+django-extensions = "*"
+ipython = "*"
 
 [dev-packages]
 
